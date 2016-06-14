@@ -8,16 +8,16 @@ _audit_conform.dict_location   http://mmcif.pdb.org/dictionaries/ascii/mmcif_pdb
 # 
 _database_2.database_id     PDB 
 _database_2.database_code   1HUJ 
-#
+# 
 loop_
-_database_PDB_rev.num
-_database_PDB_rev.date
-_database_PDB_rev.date_original
-_database_PDB_rev.status
-_database_PDB_rev.replaces
-_database_PDB_rev.mod_type
-1 1998-04-08 1997-12-26 ? 1HUJ 0
-2 2009-02-24 ?          ? 1HUJ 1
+_database_PDB_rev.num 
+_database_PDB_rev.date 
+_database_PDB_rev.date_original 
+_database_PDB_rev.status 
+_database_PDB_rev.replaces 
+_database_PDB_rev.mod_type 
+1 1998-04-08 1997-12-26 ? 1HUJ 0 
+2 2009-02-24 ?          ? 1HUJ 1 
 # 
 _database_PDB_rev_record.rev_num   2 
 _database_PDB_rev_record.type      VERSN 
@@ -723,7 +723,7 @@ _struct.pdbx_model_type_details   ?
 # 
 _struct_keywords.entry_id        1HUJ 
 _struct_keywords.pdbx_keywords   HYDROLASE 
-_struct_keywords.text            'HYDROLASE, MAGNESIUM'
+_struct_keywords.text            'HYDROLASE, MAGNESIUM' 
 # 
 loop_
 _struct_asym.id 

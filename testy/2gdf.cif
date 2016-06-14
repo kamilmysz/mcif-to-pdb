@@ -39,7 +39,7 @@ _audit_author.name
 _audit_author.pdbx_ordinal 
 'Gallego del Sol, F.' 1 
 'Chornet, J.J.C.'     2 
-'Cavada, B.S.'        3
+'Cavada, B.S.'        3 
 # 
 _citation.id                        primary 
 _citation.title                     'Crystal structure of Dioclea violacea seed lectin' 
