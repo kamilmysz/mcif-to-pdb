@@ -6,8 +6,6 @@ import re
 from bs4 import BeautifulSoup
 
 def convert (infile , outfile, log):
-    print("Input file name: " + os.path.realpath(infile))
-    print("Output file name: " + os.path.realpath(outfile))
     print("Uploading file to serwer...")
     conversionUrl = 'http://mmcif.pdbj.org/converter/index.php'
     downloadUrl = "http://mmcif.pdbj.org/converter/download.php"
@@ -38,9 +36,14 @@ def convert (infile , outfile, log):
                     if log:
                         r = session.get(logUrl+payload['p']+"/maxit.log")
                         if r.ok:
-                            with open(outfile+'.log', 'wb') as f:
-                                for chunk in r.iter_content(1024):
-                                    f.write(chunk)
+                            if  os.path.isfile('conversion.log'):
+                                with open('conversion.log', 'ab') as f:
+                                    for chunk in r.iter_content(1024):
+                                        f.write(chunk)
+                            else:
+                                with open('conversion.log', 'wb') as f:
+                                    for chunk in r.iter_content(1024):
+                                        f.write(chunk)
                     r = session.post(downloadUrl, data=payload)
                     if r.ok:
                         with open(outfile, 'wb') as f:
@@ -64,83 +67,94 @@ def convert (infile , outfile, log):
         sys.exit(4)
 
 
-
-
-def fileConversion(infile, outfile, mode, log, chain):
-    sys.stdout.write("Chosen mode: ")
+def cutPDBFile(infile, outfile, mode, chain):
+    ifile = open(infile, 'r')
+    ofile = open(outfile, 'w')
     if mode == "h":
-        print("header conversion")
-        with open(infile, 'r') as f:
-            first_line = f.readline()
-        ifile = open(infile, 'r')
-        ofile = open(infile+'tmp', 'w')
-        if 'HEADER' in first_line: #pdb
             for line in ifile.readlines():
                 if (line.startswith('HEADER') or line.startswith('OBSLTE') or line.startswith('TITLE') or line.startswith('SPLIT') or line.startswith('CAVEAT') or line.startswith('COMPND')
                     or line.startswith('SOURCE') or line.startswith('KEYWDS') or line.startswith('EXPDTA') or line.startswith('NUMMDL') or line.startswith('MDLTYP')
                     or line.startswith('AUTHOR') or line.startswith('REVDAT') or line.startswith('SPRSDE') or line.startswith('JRNL') or line.startswith('REMARK') or line.startswith('END')):
                     ofile.write(line)
+    elif mode == "c":
+        chainsInFile = []
+        if chain == 'all':
+            with open(infile, 'r') as f:
+                for line in f.readlines():
+                    if (line.startswith('HEADER') or line.startswith('DBREF') or line.startswith('SEQADV') or line.startswith('SEQRES') or line.startswith('MODRES')
+                        or line.startswith('HET') or line.startswith('HETNAM') or line.startswith('HETSYN') or line.startswith('FORMUL') or line.startswith('HELIX')
+                        or line.startswith('SHEET') or line.startswith('SSBOND') or line.startswith('LINK') or line.startswith('CISPEP') or line.startswith('SITE')
+                        or line.startswith('CRYST') or line.startswith('ORIGX') or line.startswith('SCALE') or line.startswith('MTRIX') #dalej koordynaty
+                        or line.startswith('MODEL') or line.startswith('ATOM') or line.startswith('ANISOU') or line.startswith('TER') or line.startswith('HETATM')
+                        or line.startswith('ENDMDL') or line.startswith('CONECT') or line.startswith('MASTER') or line.startswith('END')):
+                        ofile.write(line)
+        else:
+            chains = chain.split(',')
+            with open(infile, 'r') as f:
+                for line in f:
+                    if 'COMPND' in line and 'CHAIN' in line:
+                        chainsInFile += (re.sub(r'(COMPND.+CHAIN:|;|\s)','', line.rstrip()).split(','))
+            for chain in chains:
+                if chain not in chainsInFile:
+                    print('Error: Chosen chain : '+chain+' not found in file')
+                    sys.exit(3)
+            with open(infile, 'r') as f:
+                for line in f.readlines():
+                    if (line.startswith('HEADER') or (line.startswith('DBREF') and line[12] in chains) or (line.startswith('SEQADV') and line[16] in chains) or (line.startswith('SEQRES') and line[11] in chains)
+                        or (line.startswith('MODRES') and line[16] in chains) or (line.startswith('HET') and line[12] in chains) or line.startswith('HETNAM') or line.startswith('HETSYN') or line.startswith('FORMUL')
+                        or (line.startswith('HELIX') and line[19] in chains) or (line.startswith('SHEET') and line[21] in chains) or (line.startswith('SSBOND') and line[15] in chains and line[29] in chains)
+                        or (line.startswith('LINK') and line[21] in chains and line[51] in chains) or (line.startswith('CISPEP')and line[15] in chains and line[29] in chains)
+                        or (line.startswith('SITE') and line[22] in chains and line[33] in chains and line[44] in chains and line[55] in chains)
+                        or line.startswith('CRYST') or line.startswith('ORIGX') or line.startswith('SCALE') or line.startswith('MTRIX') #dalej same koordynaty
+                        or line.startswith('MODEL') or (line.startswith('ATOM') and line[21] in chains) or (line.startswith('ANISOU') and line[21] in chains)
+                        or (line.startswith('TER') and line[21] in chains) or (line.startswith('HETATM') and line[21] in chains)
+                        or line.startswith('ENDMDL') or line.startswith('CONECT') or line.startswith('MASTER') or line.startswith('END')):
+                            ofile.write(line)
+    ifile.close()
+    ofile.close()
+
+
+
+
+def fileConversion(infile, outfile, mode, log, chain):
+    print("Input file name: " + os.path.realpath(infile))
+    print("Output file name: " + os.path.realpath(outfile))
+    sys.stdout.write("Chosen mode: ")
+    if mode == "h":
+        print("Header Conversion")
+        with open(infile, 'r') as f:
+            first_line = f.readline()
+        if 'HEADER' in first_line: #pdb
+            cutPDBFile(infile, infile+'tmp', mode, chain)
+            convert(infile+'tmp', outfile, log)
+            os.remove(infile+'tmp')
         elif 'data' in first_line: #mmcif
-            #TODO mmcif header
-            print ('TODO mmcif header')
+            convert(infile, outfile+'tmp', log)
+            cutPDBFile(outfile+'tmp', outfile, mode, chain)
+            os.remove(outfile+'tmp')
         else:
             print("Error: File format not recognized.")
             sys.exit(3)
-        ofile.close()
-        convert(infile+'tmp', outfile, log)
-        os.remove(infile+'tmp')
 
     elif mode == "c":
-        print("coordinates conversion")
+        print("Coordinates Conversion")
         with open(infile, 'r') as f:
             first_line = f.readline()
-        ofile = open(infile+'tmp', 'w')
-        chainsInFile = []
         if 'HEADER' in first_line: #pdb
-            if chain == 'all':
-                with open(infile, 'r') as f:
-                    for line in f.readlines():
-                        if (line.startswith('HEADER') or line.startswith('DBREF') or line.startswith('SEQADV') or line.startswith('SEQRES') or line.startswith('MODRES')
-                            or line.startswith('HET') or line.startswith('HETNAM') or line.startswith('HETSYN') or line.startswith('FORMUL') or line.startswith('HELIX')
-                            or line.startswith('SHEET') or line.startswith('SSBOND') or line.startswith('LINK') or line.startswith('CISPEP') or line.startswith('SITE')
-                            or line.startswith('CRYST1') or line.startswith('ORIGXn') or line.startswith('SCALEn') or line.startswith('MTRIXn') #dalej koordynaty
-                            or line.startswith('MODEL') or line.startswith('ATOM') or line.startswith('ANISOU') or line.startswith('TER') or line.startswith('HETATM')
-                            or line.startswith('ENDMDL') or line.startswith('CONECT') or line.startswith('MASTER') or line.startswith('END')):
-                            ofile.write(line)
-            else:
-                chains = chain.split(',')
-                with open(infile, 'r') as f:
-                    for line in f:
-                        if 'COMPND' in line and 'CHAIN' in line:
-                            chainsInFile += (re.sub(r'(COMPND.+CHAIN:|;|\s)','', line.rstrip()).split(','))
-                for chain in chains:
-                    if chain not in chainsInFile:
-                        print('Error: Chosen chain : '+chain+' not found in file')
-                        sys.exit(3)
-                with open(infile, 'r') as f:
-                    for line in f.readlines():
-                        if (line.startswith('HEADER') or (line.startswith('DBREF') and line[12] in chains) or (line.startswith('SEQADV') and line[16] in chains) or (line.startswith('SEQRES') and line[11] in chains)
-                            or (line.startswith('MODRES') and line[16] in chains) or (line.startswith('HET') and line[12] in chains) or line.startswith('HETNAM') or line.startswith('HETSYN') or line.startswith('FORMUL')
-                            or (line.startswith('HELIX') and line[19] in chains) or (line.startswith('SHEET') and line[21] in chains) or (line.startswith('SSBOND') and line[15] in chains and line[29] in chains)
-                            or (line.startswith('LINK') and line[21] in chains and line[51] in chains) or (line.startswith('CISPEP')and line[15] in chains and line[29] in chains)
-                            or (line.startswith('SITE') and line[22] in chains and line[33] in chains and line[44] in chains and line[55] in chains)
-                            or line.startswith('CRYST') or line.startswith('ORIGX') or line.startswith('SCALE') or line.startswith('MTRIX') #dalej same koordynaty
-                            or line.startswith('MODEL') or (line.startswith('ATOM') and line[21] in chains) or (line.startswith('ANISOU') and line[21] in chains)
-                            or (line.startswith('TER') and line[21] in chains) or (line.startswith('HETATM') and line[21] in chains)
-                            or line.startswith('ENDMDL') or line.startswith('CONECT') or line.startswith('MASTER') or line.startswith('END')):
-                                ofile.write(line)
+            cutPDBFile(infile, infile+'tmp', mode, chain)
+            convert(infile+'tmp', outfile, log)
+            os.remove(infile+'tmp')
 
         elif 'data' in first_line: #mmcif
-            #TODO mmcif coordinates
-            print ('TODO mmcif coordinates')
+            convert(infile, outfile+'tmp', log)
+            cutPDBFile(outfile+'tmp', outfile, mode, chain)
+            os.remove(outfile+'tmp')
         else:
             print("Error: File format not recognized.")
-        ofile.close()
-        convert(infile+'tmp', outfile, log)
-        os.remove(infile+'tmp')
+            sys.exit(3)
 
     elif mode == "a":
-        print("all file")
+        print("All File Conversion")
         convert(infile, outfile, log)
 
 def usage():
