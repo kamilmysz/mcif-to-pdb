@@ -74,8 +74,10 @@ def cutPDBFile(infile, outfile, mode, chain):
             for line in ifile.readlines():
                 if (line.startswith('HEADER') or line.startswith('OBSLTE') or line.startswith('TITLE') or line.startswith('SPLIT') or line.startswith('CAVEAT') or line.startswith('COMPND')
                     or line.startswith('SOURCE') or line.startswith('KEYWDS') or line.startswith('EXPDTA') or line.startswith('NUMMDL') or line.startswith('MDLTYP')
-                    or line.startswith('AUTHOR') or line.startswith('REVDAT') or line.startswith('SPRSDE') or line.startswith('JRNL') or line.startswith('REMARK') or line.startswith('END')):
+                    or line.startswith('AUTHOR') or line.startswith('REVDAT') or line.startswith('SPRSDE') or line.startswith('JRNL') or line.startswith('REMARK')
+                    or line.startswith('DBREF') or line.startswith('SEQADV') or line.startswith('SEQRES') or line.startswith('HELIX') or line.startswith('CRYST')):
                     ofile.write(line)
+            ofile.write("END\n")
     elif mode == "c":
         chainsInFile = []
         if chain == 'all':
@@ -96,7 +98,7 @@ def cutPDBFile(infile, outfile, mode, chain):
                         chainsInFile += (re.sub(r'(COMPND.+CHAIN:|;|\s)','', line.rstrip()).split(','))
             for chain in chains:
                 if chain not in chainsInFile:
-                    print('Error: Chosen chain : '+chain+' not found in file')
+                    print('Error: Chosen chain: '+chain+' not found in file')
                     sys.exit(3)
             with open(infile, 'r') as f:
                 for line in f.readlines():
@@ -169,7 +171,7 @@ def usage():
     print("             default mode = a - all file")
     print("                     mode = h - header only")
     print("                     mode = c - coordinates only")
-    print("  -c chains     only with -m c alows selection of chains to convert")
+    print("   -c chains     only with -m c alows selection of chains to convert")
     print()
     print("Examples:")
     print(" main -i 1asy.pdb -o 1asy.cif - coversion of all 1asy.pdb to 1asy.cif")
